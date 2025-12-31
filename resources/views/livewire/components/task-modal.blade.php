@@ -1,15 +1,24 @@
 <?php
 
+use App\Enums\TaskPriority;
+use App\Enums\TaskStatus;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public ?array $task = null;
+
     public array $boards = [];
+
     public bool $show = false;
 
     public string $title = '';
+
     public string $description = '';
-    public string $status = 'TODO';
+
+    public string $status = '';
+
+    public string $priority = '';
 
     public function mount(?array $task = null, array $boards = [], bool $show = false): void
     {
@@ -20,14 +29,18 @@ new class extends Component {
         if ($task) {
             $this->title = $task['title'] ?? '';
             $this->description = $task['description'] ?? '';
-            $this->status = $task['status'] ?? 'TODO';
+            $this->status = $task['status'] ?? TaskStatus::TODO->value;
+            $this->priority = $task['priority'] ?? TaskPriority::MEDIUM->value;
+        } else {
+            $this->status = TaskStatus::TODO->value;
+            $this->priority = TaskPriority::MEDIUM->value;
         }
     }
 
     public function updatedShow(): void
     {
-        if (!$this->show) {
-            $this->reset(['title', 'description', 'status', 'task']);
+        if (! $this->show) {
+            $this->reset(['title', 'description', 'status', 'priority', 'task']);
         }
     }
 
@@ -41,6 +54,11 @@ new class extends Component {
     {
         $this->show = false;
         $this->dispatch('modal-closed');
+    }
+
+    public function getPriorities(): array
+    {
+        return TaskPriority::options();
     }
 
     protected function getListeners(): array
@@ -139,7 +157,7 @@ new class extends Component {
                 </div>
 
                 <!-- Status -->
-                <div class="mb-6">
+                <div class="mb-4">
                     <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Status
                     </label>
@@ -153,6 +171,25 @@ new class extends Component {
                         @endforeach
                     </select>
                     @error('status')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Priority -->
+                <div class="mb-6">
+                    <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Priority
+                    </label>
+                    <select
+                        id="priority"
+                        wire:model="priority"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    >
+                        @foreach ($this->getPriorities() as $priorityOption)
+                            <option value="{{ $priorityOption['value'] }}">{{ $priorityOption['label'] }}</option>
+                        @endforeach
+                    </select>
+                    @error('priority')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>

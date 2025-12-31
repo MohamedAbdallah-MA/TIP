@@ -1,78 +1,81 @@
 <?php
 
+use App\Enums\TaskPriority;
+use App\Enums\TaskStatus;
+use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new #[Layout('layouts.app')] class extends Component
+{
     /**
      * Mock data for Phase 1 - Frontend only
      * This will be replaced with real data in Phase 2
      */
-    public array $boards = [
-        [
-            'id' => 'todo',
-            'title' => 'Todo',
-            'status' => 'TODO',
-            'color' => 'blue',
-        ],
-        [
-            'id' => 'in-progress',
-            'title' => 'In Progress',
-            'status' => 'IN_PROGRESS',
-            'color' => 'yellow',
-        ],
-        [
-            'id' => 'cancelled',
-            'title' => 'Cancelled',
-            'status' => 'CANCELLED',
-            'color' => 'red',
-        ],
-        [
-            'id' => 'done',
-            'title' => 'Done',
-            'status' => 'DONE',
-            'color' => 'green',
-        ],
-    ];
+    public array $boards;
 
-    public array $tasks = [
-        [
-            'id' => 1,
-            'task_number' => 'TASK-001',
-            'title' => 'Design user interface',
-            'description' => 'Create wireframes and mockups for the todo application',
-            'status' => 'TODO',
-        ],
-        [
-            'id' => 2,
-            'task_number' => 'TASK-002',
-            'title' => 'Implement authentication',
-            'description' => 'Set up Laravel Breeze with Livewire authentication',
-            'status' => 'IN_PROGRESS',
-        ],
-        [
-            'id' => 3,
-            'task_number' => 'TASK-003',
-            'title' => 'Create database schema',
-            'description' => 'Design and implement the tasks table structure',
-            'status' => 'DONE',
-        ],
-        [
-            'id' => 4,
-            'task_number' => 'TASK-004',
-            'title' => 'Write unit tests',
-            'description' => 'Create comprehensive test coverage for all features',
-            'status' => 'TODO',
-        ],
-        [
-            'id' => 5,
-            'task_number' => 'TASK-005',
-            'title' => 'Fix critical bug',
-            'description' => 'Resolve the issue with task deletion',
-            'status' => 'CANCELLED',
-        ],
-    ];
+    public array $tasks;
+
+    public string $searchQuery = '';
+
+    public function mount(): void
+    {
+        $this->initializeBoards();
+        $this->initializeTasks();
+    }
+
+    protected function initializeBoards(): void
+    {
+        $this->boards = TaskStatus::allBoards();
+    }
+
+    protected function initializeTasks(): void
+    {
+        $this->tasks = [
+            [
+                'id' => 1,
+                'task_number' => 'TASK-001',
+                'title' => 'Design user interface',
+                'description' => 'Create wireframes and mockups for the todo application',
+                'status' => TaskStatus::TODO->value,
+                'priority' => TaskPriority::HIGH->value,
+            ],
+            [
+                'id' => 2,
+                'task_number' => 'TASK-002',
+                'title' => 'Implement authentication',
+                'description' => 'Set up Laravel Breeze with Livewire authentication',
+                'status' => TaskStatus::IN_PROGRESS->value,
+                'priority' => TaskPriority::MEDIUM->value,
+            ],
+            [
+                'id' => 3,
+                'task_number' => 'TASK-003',
+                'title' => 'Create database schema',
+                'description' => 'Design and implement the tasks table structure',
+                'status' => TaskStatus::DONE->value,
+                'priority' => TaskPriority::LOW->value,
+            ],
+            [
+                'id' => 4,
+                'task_number' => 'TASK-004',
+                'title' => 'Write unit tests',
+                'description' => 'Create comprehensive test coverage for all features',
+                'status' => TaskStatus::TODO->value,
+                'priority' => TaskPriority::MEDIUM->value,
+            ],
+            [
+                'id' => 5,
+                'task_number' => 'TASK-005',
+                'title' => 'Fix critical bug',
+                'description' => 'Resolve the issue with task deletion',
+                'status' => TaskStatus::CANCELLED->value,
+                'priority' => TaskPriority::HIGH->value,
+            ],
+        ];
+    }
 
     public bool $showModal = false;
+
     public ?array $editingTask = null;
 
     public function openCreateModal(): void
@@ -96,10 +99,38 @@ new class extends Component {
 
     public function getTasksForBoard(string $status): array
     {
-        return collect($this->tasks)
-            ->where('status', $status)
-            ->values()
-            ->toArray();
+        $tasks = collect($this->tasks)
+            ->where('status', $status);
+
+        if (! empty($this->searchQuery)) {
+            $tasks = $tasks->filter(function ($task) {
+                return $this->matchesSearchQuery($task);
+            });
+        }
+
+        return $tasks->values()->toArray();
+    }
+
+    protected function matchesSearchQuery(array $task): bool
+    {
+        $query = strtolower(trim($this->searchQuery));
+
+        if (empty($query)) {
+            return true;
+        }
+
+        $taskNumber = strtolower($task['task_number'] ?? '');
+        $title = strtolower($task['title'] ?? '');
+        $description = strtolower($task['description'] ?? '');
+
+        return str_contains($taskNumber, $query)
+            || str_contains($title, $query)
+            || str_contains($description, $query);
+    }
+
+    public function updatedSearchQuery(): void
+    {
+        $this->dispatch('search-updated', query: $this->searchQuery);
     }
 
     protected function getListeners(): array
@@ -107,7 +138,13 @@ new class extends Component {
         return [
             'open-edit-modal' => 'openEditModal',
             'modal-closed' => 'closeModal',
+            'search-query-changed' => 'handleSearchQueryChanged',
         ];
+    }
+
+    public function handleSearchQueryChanged(string $query): void
+    {
+        $this->searchQuery = $query;
     }
 }; ?>
 

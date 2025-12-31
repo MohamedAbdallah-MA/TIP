@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\TaskPriority;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public array $task;
 
     public function mount(array $task): void
@@ -12,28 +14,91 @@ new class extends Component {
 
     public function edit(): void
     {
-        $this->dispatch('open-edit-modal', taskId: $this->task['id']);
+        $this->dispatch('open-edit-modal', taskId: $this->getTaskId());
     }
 
     public function delete(): void
     {
         // Placeholder for Phase 2
     }
+
+    public function getTaskId(): int
+    {
+        return $this->task['id'] ?? 0;
+    }
+
+    public function getTaskNumber(): string
+    {
+        return $this->task['task_number'] ?? '';
+    }
+
+    public function getTaskTitle(): string
+    {
+        return $this->task['title'] ?? '';
+    }
+
+    public function getTaskDescription(): string
+    {
+        return $this->task['description'] ?? '';
+    }
+
+    public function hasDescription(): bool
+    {
+        return ! empty($this->getTaskDescription());
+    }
+
+    public function getTaskStatus(): string
+    {
+        return $this->task['status'] ?? '';
+    }
+
+    public function getPriority(): TaskPriority
+    {
+        $priorityValue = $this->task['priority'] ?? TaskPriority::MEDIUM->value;
+
+        return TaskPriority::from($priorityValue);
+    }
+
+    public function getPriorityBorderClass(): string
+    {
+        return $this->getPriority()->borderColorClass();
+    }
+
+    public function getPriorityLabel(): string
+    {
+        return $this->getPriority()->label();
+    }
+
+    public function getPriorityBadgeClass(): string
+    {
+        return $this->getPriority()->badgeClass();
+    }
+
+    public function getPriorityValue(): string
+    {
+        return $this->getPriority()->value;
+    }
 }; ?>
 
 <div
-    class="task-card bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4 cursor-pointer hover:shadow-md transition-shadow duration-200"
-    wire:key="task-card-{{ $task['id'] }}"
-    data-task-id="{{ $task['id'] }}"
-    data-status="{{ $task['status'] }}"
+    class="task-card bg-white dark:bg-gray-700 rounded-lg shadow-sm border-2 {{ $this->getPriorityBorderClass() }} dark:border-opacity-75 p-4 cursor-pointer hover:shadow-md transition-shadow duration-200"
+    wire:key="task-card-{{ $this->getTaskId() }}"
+    data-task-id="{{ $this->getTaskId() }}"
+    data-status="{{ $this->getTaskStatus() }}"
+    data-priority="{{ $this->getPriorityValue() }}"
     draggable="true"
     x-data="{ isHovered: false }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
 >
-    <!-- Task Number -->
+    <!-- Task Number and Priority -->
     <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $task['task_number'] }}</span>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $this->getTaskNumber() }}</span>
+            <span class="priority-badge {{ $this->getPriorityBadgeClass() }}">
+                {{ $this->getPriorityLabel() }}
+            </span>
+        </div>
         <div class="flex items-center gap-1 opacity-0 transition-opacity duration-200" :class="{ 'opacity-100': isHovered }">
             <button
                 type="button"
@@ -60,20 +125,20 @@ new class extends Component {
 
     <!-- Task Title -->
     <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
-        {{ $task['title'] }}
+        {{ $this->getTaskTitle() }}
     </h4>
 
     <!-- Task Description -->
-    @if (!empty($task['description']))
+    @if ($this->hasDescription())
         <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-3">
-            {{ $task['description'] }}
+            {{ $this->getTaskDescription() }}
         </p>
     @endif
 
     <!-- Task Footer -->
     <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-600">
         <span class="text-xs text-gray-500 dark:text-gray-400">
-            {{ \Carbon\Carbon::now()->diffForHumans() }}
+            {{ now()->diffForHumans() }}
         </span>
     </div>
 </div>

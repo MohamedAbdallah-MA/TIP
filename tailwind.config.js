@@ -9,10 +9,20 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
+    safelist: [
+        {
+            pattern: /bg-(blue|orange|green|red)-(100|200)/,
+            variants: ['hover'],
+        },
+        {
+            pattern: /text-(blue|orange|green|red)-700/,
+        },
+    ],
+
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
             },
         },
     },

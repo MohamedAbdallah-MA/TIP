@@ -33,8 +33,18 @@ new class extends Component
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')" wire:navigate>
+                        {{ __('Todos') }}
+                    </x-nav-link>
                 </div>
             </div>
+
+            <!-- Search Bar (only on todos page) -->
+            @if (request()->routeIs('todos.*'))
+                <div class="hidden sm:flex sm:items-center sm:mx-4 flex-1 max-w-md">
+                    <livewire:components.todo-search />
+                </div>
+            @endif
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -80,9 +90,17 @@ new class extends Component
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        @if (request()->routeIs('todos.*'))
+            <div class="px-4 pt-2 pb-3">
+                <livewire:components.todo-search />
+            </div>
+        @endif
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')" wire:navigate>
+                {{ __('Todos') }}
             </x-responsive-nav-link>
         </div>
 
