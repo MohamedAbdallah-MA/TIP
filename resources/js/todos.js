@@ -24,40 +24,47 @@ function initializeTodos() {
 
 /**
  * Initialize drag and drop functionality
- * Architecture-ready for Phase 2 backend integration
+ * Uses Event Delegation to handle dynamic DOM updates from Livewire
  */
 function initializeDragAndDrop() {
-    const taskCards = document.querySelectorAll('[data-task-id]');
-    const boards = document.querySelectorAll('[data-board-id]');
-
-    taskCards.forEach(card => {
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragend', handleDragEnd);
-    });
-
-    boards.forEach(board => {
-        board.addEventListener('dragover', handleDragOver);
-        board.addEventListener('drop', handleDrop);
-        board.addEventListener('dragenter', handleDragEnter);
-        board.addEventListener('dragleave', handleDragLeave);
-    });
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('drop', handleDrop);
+    document.addEventListener('dragenter', handleDragEnter);
+    document.addEventListener('dragleave', handleDragLeave);
 }
 
 /**
  * Handle drag start event
  */
 function handleDragStart(e) {
+    // Handle Text Nodes (e.g. dragging selected text) which don't have closest()
+    const target = e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+
+    const card = target.closest('[data-task-id]');
+    if (!card) return;
+
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.outerHTML);
-    e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
-    e.target.classList.add('opacity-50', 'dragging');
+    e.dataTransfer.setData('text/html', card.outerHTML);
+    e.dataTransfer.setData('application/x-task-id', card.dataset.taskId);
+
+    // Defer adding the class slightly so the drag image is created from the visible element
+    setTimeout(() => {
+        card.classList.add('opacity-50', 'dragging');
+    }, 0);
 }
 
 /**
  * Handle drag end event
  */
 function handleDragEnd(e) {
-    e.target.classList.remove('opacity-50', 'dragging');
+    const target = e.target.nodeType === Node.TEXT_NODE ? e.target.parentElement : e.target;
+    // ... no changes needed to logic, just context matching ...
+    const card = target.closest('[data-task-id]');
+    if (!card) return;
+
+    card.classList.remove('opacity-50', 'dragging');
 
     // Remove drag-over styling from all boards
     document.querySelectorAll('[data-board-id]').forEach(board => {
@@ -69,6 +76,15 @@ function handleDragEnd(e) {
  * Handle drag over event
  */
 function handleDragOver(e) {
+    const board = e.target.closest('[data-board-id]');
+    if (!board) return;
+
+    // Only allow drop if we have our custom type (or if we can't check types in dragover)
+    // Note: e.dataTransfer.types includes the types available.
+    if (e.dataTransfer.types.includes && !e.dataTransfer.types.includes('application/x-task-id')) {
+        return;
+    }
+
     if (e.preventDefault) {
         e.preventDefault();
     }
@@ -80,35 +96,49 @@ function handleDragOver(e) {
  * Handle drag enter event
  */
 function handleDragEnter(e) {
-    e.currentTarget.classList.add('drag-over');
+    const board = e.target.closest('[data-board-id]');
+    if (!board) return;
+
+    board.classList.add('drag-over');
 }
 
 /**
  * Handle drag leave event
  */
 function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
+    const board = e.target.closest('[data-board-id]');
+    if (!board) return;
+
+    // Only remove if we are actually leaving the board (not entering a child)
+    // relatedTarget is the element we are entering
+    if (!board.contains(e.relatedTarget)) {
+        board.classList.remove('drag-over');
+    }
 }
 
 /**
  * Handle drop event
- * Placeholder for Phase 2 - will call Livewire action
  */
 function handleDrop(e) {
+    const board = e.target.closest('[data-board-id]');
+    if (!board) return;
+
     if (e.stopPropagation) {
         e.stopPropagation();
     }
 
-    e.currentTarget.classList.remove('drag-over');
+    board.classList.remove('drag-over');
 
-    const taskId = e.dataTransfer.getData('text/plain');
-    const boardId = e.currentTarget.closest('[data-board-id]')?.dataset.boardId;
+    const taskIdStr = e.dataTransfer.getData('application/x-task-id');
+    const status = board.dataset.status;
 
-    if (taskId && boardId) {
-        // Phase 2: Call Livewire action to update task status
-        // Livewire.dispatch('task-moved', { taskId, boardId });
-        console.log(`Task ${taskId} moved to board ${boardId}`);
+    if (taskIdStr && status) {
+        const taskId = parseInt(taskIdStr);
+        if (!isNaN(taskId)) {
+            Livewire.dispatch('task-moved', { taskId: taskId, status: status });
+        }
     }
+    // No else: silently ignore drops that don't have our custom type
 
     return false;
 }
@@ -142,4 +172,3 @@ export function getBoardColorClass(color) {
 
     return colorMap[color] || 'bg-gray-500';
 }
-

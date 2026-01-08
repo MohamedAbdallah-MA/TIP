@@ -1,45 +1,48 @@
 <?php
 
 use App\Enums\TaskPriority;
+use App\Models\Task;
+use App\Services\TaskService;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
-    public array $task;
+    public Task $task;
 
-    public function mount(array $task): void
+    public function mount(Task $task): void
     {
         $this->task = $task;
     }
 
     public function edit(): void
     {
-        $this->dispatch('open-edit-modal', taskId: $this->getTaskId());
+        $this->dispatch('open-edit-modal', taskId: $this->task->id);
     }
 
-    public function delete(): void
+    public function delete(TaskService $taskService): void
     {
-        // Placeholder for Phase 2
+        $taskService->delete($this->task->id, auth()->id());
+        $this->dispatch('task-deleted');
     }
 
     public function getTaskId(): int
     {
-        return $this->task['id'] ?? 0;
+        return $this->task->id;
     }
 
     public function getTaskNumber(): string
     {
-        return $this->task['task_number'] ?? '';
+        return $this->task->task_number;
     }
 
     public function getTaskTitle(): string
     {
-        return $this->task['title'] ?? '';
+        return $this->task->title;
     }
 
     public function getTaskDescription(): string
     {
-        return $this->task['description'] ?? '';
+        return $this->task->description ?? '';
     }
 
     public function hasDescription(): bool
@@ -49,14 +52,12 @@ new class extends Component
 
     public function getTaskStatus(): string
     {
-        return $this->task['status'] ?? '';
+        return $this->task->status->value;
     }
 
     public function getPriority(): TaskPriority
     {
-        $priorityValue = $this->task['priority'] ?? TaskPriority::MEDIUM->value;
-
-        return TaskPriority::from($priorityValue);
+        return $this->task->priority;
     }
 
     public function getPriorityBorderClass(): string
@@ -113,6 +114,7 @@ new class extends Component
             <button
                 type="button"
                 wire:click="delete"
+                wire:confirm="Are you sure you want to delete this task?"
                 class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 title="Delete task"
             >
@@ -138,7 +140,7 @@ new class extends Component
     <!-- Task Footer -->
     <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-600">
         <span class="text-xs text-gray-500 dark:text-gray-400">
-            {{ now()->diffForHumans() }}
+            {{ $task->created_at->diffForHumans() }}
         </span>
     </div>
 </div>
