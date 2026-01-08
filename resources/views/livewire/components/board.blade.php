@@ -1,14 +1,17 @@
 <?php
 
+use Illuminate\Database\Eloquent\Collection;
+use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
     public array $board;
 
-    public array $tasks = [];
+    #[Reactive]
+    public Collection $tasks;
 
-    public function mount(array $board, array $tasks = []): void
+    public function mount(array $board, Collection $tasks): void
     {
         $this->board = $board;
         $this->tasks = $tasks;
@@ -36,7 +39,7 @@ new class extends Component
 
     public function getTasksCount(): int
     {
-        return count($this->tasks);
+        return $this->tasks->count();
     }
 
     public function hasTasks(): bool
@@ -67,7 +70,7 @@ new class extends Component
         @if ($this->hasTasks())
             @foreach ($tasks as $task)
                 <livewire:components.task-card
-                    wire:key="task-{{ $task['id'] }}"
+                    wire:key="task-{{ $task->id }}"
                     :task="$task"
                 />
             @endforeach
