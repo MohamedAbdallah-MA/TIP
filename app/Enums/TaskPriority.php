@@ -8,6 +8,16 @@ enum TaskPriority: string
     case MEDIUM = 'MEDIUM';
     case LOW = 'LOW';
 
+    public static function names(): array
+    {
+        return array_column(self::cases(), 'name');
+    }
+
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -53,5 +63,10 @@ enum TaskPriority: string
             ],
             self::cases()
         );
+    }
+
+    public static function fromInput($value)
+    {
+        return self::tryFrom(strtoupper($value));
     }
 }

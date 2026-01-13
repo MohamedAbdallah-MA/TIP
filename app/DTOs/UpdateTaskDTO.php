@@ -13,4 +13,14 @@ readonly class UpdateTaskDTO
         public ?TaskStatus $status = null,
         public ?TaskPriority $priority = null,
     ) {}
+
+    public static function fromRequest($request): self
+    {
+        return new self(
+            title: $request->get('title'),
+            description: $request->get('description'),
+            status: TaskStatus::tryFrom($request->get('status')),
+            priority:TaskPriority::tryFrom($request->get('priority')),
+        );
+    }
 }

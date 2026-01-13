@@ -10,6 +10,7 @@ new class extends Component
 {
     public string $name = '';
     public string $email = '';
+    public string $token = '';
 
     /**
      * Mount the component.
@@ -18,6 +19,18 @@ new class extends Component
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->token = Session::get('api_token', '');
+    }
+
+    /**
+     * Generate a new API token.
+     */
+    public function generateToken(): void
+    {
+        $user = Auth::user();
+        $user->tokens()->delete();
+
+        $this->token = $user->createToken('api-token')->plainTextToken;
     }
 
     /**
@@ -102,6 +115,77 @@ new class extends Component
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                {{ __('API Token') }}
+            </h3>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                {{ __('This is your bearer token for API access. It is only shown once after generation for security.') }}
+            </p>
+
+            <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" 
+                 x-data="{ 
+                    token: @entangle('token'),
+                    copy() {
+                        if (!this.token) return;
+                        if (navigator.clipboard && window.isSecureContext) {
+                            navigator.clipboard.writeText(this.token).then(() => {
+                                $dispatch('show-copy-message');
+                            });
+                        } else {
+                            let textArea = document.createElement('textarea');
+                            textArea.value = this.token;
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-9999px';
+                            textArea.style.top = '0';
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                $dispatch('show-copy-message');
+                            } catch (err) {
+                                console.error('Unable to copy', err);
+                            }
+                            document.body.removeChild(textArea);
+                        }
+                    }
+                 }">
+                <div class="flex-grow">
+                    <x-text-input 
+                        id="api_token" 
+                        type="text" 
+                        class="mt-1 block w-full bg-gray-100 dark:bg-gray-800" 
+                        x-bind:value="token || '{{ __('****************') }}'" 
+                        disabled 
+                    />
+                </div>
+
+                <div class="flex gap-2 shrink-0">
+                    <x-secondary-button 
+                        type="button"
+                        x-on:click="copy()"
+                        x-bind:disabled="!token"
+                    >
+                        {{ __('Copy') }}
+                    </x-secondary-button>
+
+                    <x-secondary-button 
+                        type="button" 
+                        wire:click="generateToken"
+                        wire:loading.attr="disabled"
+                    >
+                        <span wire:loading.remove wire:target="generateToken">{{ __('Generate New') }}</span>
+                        <span wire:loading wire:target="generateToken">{{ __('Generating...') }}</span>
+                    </x-secondary-button>
+                </div>
+
+                <x-action-message class="me-3" on="show-copy-message">
+                    {{ __('Copied to clipboard.') }}
+                </x-action-message>
+            </div>
         </div>
 
         <div class="flex items-center gap-4">

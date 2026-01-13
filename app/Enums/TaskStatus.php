@@ -9,6 +9,16 @@ enum TaskStatus: string
     case CANCELLED = 'CANCELLED';
     case DONE = 'DONE';
 
+    public static function names(): array
+    {
+        return array_column(self::cases(), 'name');
+    }
+
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -76,5 +86,10 @@ enum TaskStatus: string
             fn (self $status) => $status->toBoardArray(),
             self::cases()
         );
+    }
+
+    public static function fromInput($value)
+    {
+        return self::tryFrom(strtoupper($value));
     }
 }

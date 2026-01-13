@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -17,5 +18,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('todos', 'pages.todos.index')
         ->name('todos.index');
 });
+
+Route::get('/test', [TestController::class, 'index'])->name('test.index');
 
 require __DIR__.'/auth.php';
